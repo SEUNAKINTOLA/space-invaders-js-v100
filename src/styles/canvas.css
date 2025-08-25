@@ -1,0 +1,136 @@
+/**
+ * Space Invaders Canvas Styling
+ * ============================
+ * Core styles for the game canvas and container elements
+ * 
+ * Features:
+ * - Responsive canvas sizing with aspect ratio preservation
+ * - Crisp pixel rendering for retro graphics
+ * - Centered positioning with flex layout
+ * - Fallbacks for older browsers
+ * - Performance optimizations for rendering
+ */
+
+/* Canvas Container */
+.canvas-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+  background-color: #000;
+  overflow: hidden;
+  /* Prevent unwanted scrolling */
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+/* Main Game Canvas */
+.game-canvas {
+  /* Crisp pixel rendering */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  -ms-interpolation-mode: nearest-neighbor;
+  
+  /* Base canvas size - maintains 4:3 aspect ratio */
+  width: 800px;
+  height: 600px;
+  
+  /* Responsive scaling */
+  max-width: 100%;
+  max-height: 100vh;
+  
+  /* Prevent unwanted interactions */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  
+  /* Optimize performance */
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  
+  /* Visual style */
+  background-color: #000;
+  border: 2px solid #33ff33;
+  box-shadow: 0 0 10px #33ff33;
+}
+
+/* Fullscreen mode */
+.game-canvas.fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border: none;
+}
+
+/* Loading state */
+.canvas-container.loading::after {
+  content: "Loading...";
+  position: absolute;
+  color: #33ff33;
+  font-family: monospace;
+  font-size: 24px;
+  animation: blink 1s infinite;
+}
+
+/* Loading animation */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* High-contrast mode */
+@media (prefers-contrast: high) {
+  .game-canvas {
+    border-color: #fff;
+    box-shadow: 0 0 15px #fff;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .canvas-container.loading::after {
+    animation: none;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .game-canvas {
+    width: 100%;
+    height: auto;
+    border-width: 1px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .canvas-container {
+    display: none;
+  }
+}
+
+/* Error state */
+.canvas-container.error .game-canvas {
+  border-color: #ff3333;
+  box-shadow: 0 0 10px #ff3333;
+}
+
+.canvas-container.error::after {
+  content: "Error loading game";
+  position: absolute;
+  color: #ff3333;
+  font-family: monospace;
+  font-size: 24px;
+}
+
+/* Focus styles for accessibility */
+.game-canvas:focus {
+  outline: 3px solid #33ff33;
+  outline-offset: 2px;
+}
+
+/* Hide canvas while assets are loading */
+.canvas-container.preload .game-canvas {
+  visibility: hidden;
+}

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="description" content="Space Invaders Game - A modern implementation with advanced rendering and game loop">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    
+    <!-- Security headers -->
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    
+    <title>Space Invaders</title>
+    
+    <style>
+        /* Critical rendering path styles */
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #game-canvas {
+            background: #000;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        .loading {
+            color: #fff;
+            font-size: 1.2em;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .error {
+            color: #ff4444;
+            padding: 20px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Game container with fallback -->
+    <div id="game-container">
+        <canvas id="game-canvas" width="800" height="600">
+            Your browser does not support the canvas element.
+        </canvas>
+        <div id="loading" class="loading">Loading game engine...</div>
+        <div id="error" class="error"></div>
+    </div>
+
+    <!-- Error handling and initialization -->
+    <script>
+        (function() {
+            'use strict';
+            
+            // Game initialization state
+            const gameState = {
+                initialized: false,
+                error: null,
+                startTime: performance.now()
+            };
+
+            // Canvas setup and validation
+            function initializeCanvas() {
+                const canvas = document.getElementById('game-canvas');
+                const ctx = canvas.getContext('2d');
+                
+                if (!ctx) {
+                    throw new Error('2D context not supported');
+                }
+
+                // Configure canvas for crisp pixel art
+                ctx.imageSmoothingEnabled = false;
+                
+                return { canvas, ctx };
+            }
+
+            // Error handling
+            function handleError(error) {
+                console.error('Game initialization error:', error);
+                const errorElement = document.getElementById('error');
+                errorElement.style.display = 'block';
+                errorElement.textContent = 'Failed to initialize game. Please refresh or check console.';
+                
+                // Hide loading message
+                document.getElementById('loading').style.display = 'none';
+            }
+
+            // Main initialization
+            try {
+                const { canvas, ctx } = initializeCanvas();
+                
+                // Basic game loop (placeholder until engine loads)
+                function temporaryLoop() {
+                    if (!gameState.initialized) {
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '20px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('Initializing game engine...', canvas.width / 2, canvas.height / 2);
+                        requestAnimationFrame(temporaryLoop);
+                    }
+                }
+
+                // Start temporary loop
+                temporaryLoop();
+
+                // Hide loading message once initialization is complete
+                window.addEventListener('load', () => {
+                    const loadTime = performance.now() - gameState.startTime;
+                    console.log(`Page load completed in ${loadTime.toFixed(2)}ms`);
+                    document.getElementById('loading').style.display = 'none';
+                });
+
+            } catch (error) {
+                handleError(error);
+            }
+        })();
+    </script>
+</body>
+</html>
