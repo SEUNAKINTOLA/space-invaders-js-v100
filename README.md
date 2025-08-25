@@ -1,90 +1,82 @@
-### Performance Benchmarks
+## 🔧 Performance Optimization
 
-Key metrics monitored:
-- Frame time (target: < 16.67ms)
-- Memory usage
-- Entity update time
-- Render pipeline performance
+Key performance metrics and thresholds:
 
-## 🔍 Development Guidelines
+- Target FPS: 60 (16.67ms per frame)
+- Maximum entities: 1000
+- Memory warning threshold: 90%
+- Garbage collection interval: 1000ms
 
-### Canvas Best Practices
+## 🛡️ Technical Constraints
 
-1. **Optimization**
-   - Use `requestAnimationFrame`
-   - Implement object pooling
-   - Batch rendering operations
-   - Use appropriate canvas dimensions
+- Canvas dimensions: 800x600 pixels
+- Device pixel ratio support
+- Maximum velocity: 10 units/frame
+- Collision precision: 2 pixels
 
-2. **Memory Management**
-   - Clear unused references
-   - Dispose of unused canvas contexts
-   - Manage sprite sheet memory
+## 🎮 Game Constants
 
-### Game Loop Implementation
+### Player Configuration
+- Initial lives: 3
+- Movement speed: 5 units
+- Shoot cooldown: 250ms
+- Size: 32x32 pixels
 
-1. **Fixed Timestep**
-   - Consistent physics updates
-   - Deterministic game state
-   - Frame rate independence
+### Enemy Configuration
+- Grid: 5 rows x 11 columns
+- Spacing: 50px horizontal, 40px vertical
+- Movement speed: 2 units (increases with level)
+- Points: 30/20/10 (top/middle/bottom rows)
 
-2. **State Management**
-   - Clear state transitions
-   - Predictable update cycle
-   - Error boundary handling
+## 📊 Performance Monitoring
 
-## 🛠️ Performance Optimization
+The game includes real-time performance monitoring:
 
-### Rendering Optimizations
-- Layer management
-- Dirty rectangle tracking
-- Sprite batching
-- Canvas state minimization
-
-### Memory Management
-- Object pooling
-- Texture atlases
-- Garbage collection optimization
-- Asset preloading
-
-## 📊 Monitoring and Debugging
-
-### Performance Metrics
-- FPS counter
-- Frame time graph
+- FPS counter (development mode)
 - Memory usage tracking
+- Frame time warnings
 - Entity count monitoring
 
-### Debug Tools
-- State inspector
-- Entity hierarchy viewer
-- Performance profiler
-- Canvas debug overlay
+## 🔄 Game States
 
-## 🔐 Security Considerations
+- MENU
+- PLAYING
+- PAUSED
+- GAME_OVER
+- HIGH_SCORE
 
-1. **Input Validation**
-   - Sanitize all user inputs
-   - Validate asset sources
-   - Secure event handling
+## 🏆 Scoring System
 
-2. **Resource Loading**
-   - Validate asset integrity
-   - Implement content security policy
-   - Safe error handling
+- High score tracking (top 10)
+- Combo multiplier: 1.5x
+- Combo timeout: 1000ms
+- Level completion bonus: 1000 points
 
-## 📝 Documentation Standards
+## 🛠️ Development Guidelines
 
-All code should be documented following these guidelines:
-- JSDoc comments for functions
-- Type annotations
-- Architecture decisions
-- Performance implications
+1. Follow Clean Architecture principles
+2. Maintain test coverage above 80%
+3. Document all public APIs
+4. Use performance monitoring tools
+5. Follow security best practices
+
+## 📝 License
+
+MIT License - See LICENSE file for details
 
 ## 🤝 Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+1. Fork the repository
+2. Create feature branch
+3. Commit changes
+4. Push to branch
+5. Create Pull Request
 
-## 📜 License
+## 📞 Support
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+- File an issue on GitHub
+- Check documentation in `/docs`
+- Review performance benchmarks
+
+---
+Built with ❤️ by [Your Team Name]

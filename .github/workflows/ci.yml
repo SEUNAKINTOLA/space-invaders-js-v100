@@ -1,0 +1,151 @@
+# .github/workflows/ci.yml
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  validate:
+    name: Validate Project Structure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Validate file structure
+        run: |
+          required_files=(
+            "src/config/constants.js"
+            "src/core/Canvas.js"
+            "src/core/GameLoop.js"
+            "src/core/Renderer.js"
+            "src/utils/Performance.js"
+          )
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ Missing required file: $file"
+              exit 1
+            fi
+          done
+          echo "✅ File structure validation passed"
+
+  docker-build:
+    name: Docker Build
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build development image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: space-invaders:dev
+          target: development
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build production image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: space-invaders:prod
+          target: production
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  test:
+    name: Run Tests
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run tests in Docker
+        run: docker-compose -f docker-compose.test.yml up --build --exit-code-from tests
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: |
+            tests/results
+            tests/coverage
+          retention-days: 7
+
+  performance:
+    name: Performance Tests
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run performance benchmarks
+        run: |
+          docker-compose -f docker-compose.test.yml run --rm tests \
+            python3 -m tests.performance.benchmark_07f91cf3-e775-48a1-af78-9511daa53005 \
+            python3 -m tests.performance.benchmark_3a2c2412-e1a1-455b-ad87-0514e8d942fe
+
+      - name: Upload performance results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: tests/performance/results
+          retention-days: 7
+
+  security:
+    name: Security Scan
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'space-invaders:prod'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  notify:
+    name: Notification
+    needs: [test, performance, security]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check workflow status
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1
+
+      - name: Send notification
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

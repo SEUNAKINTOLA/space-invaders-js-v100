@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   # Main development service
-  app:
+  dev:
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,7 +11,7 @@ services:
       - .:/app
       - /app/node_modules
     ports:
-      - "3000:3000"
+      - "3000:3000" # Main application
       - "9229:9229" # Debug port
     environment:
       - NODE_ENV=development
@@ -31,7 +31,7 @@ services:
           cpus: '1'
           memory: 1G
 
-  # Test service for running automated tests
+  # Test runner service
   test:
     build:
       context: .
@@ -42,36 +42,47 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=test
-      - DEBUG=false
-    command: npm run test
-    depends_on:
-      app:
-        condition: service_healthy
+      - JEST_JUNIT_OUTPUT_DIR=/app/test-results
+    command: npm run test:watch
 
-  # Performance testing service
+  # Performance monitoring service
   perf:
     build:
       context: .
       dockerfile: Dockerfile
-      target: test
+      target: performance
     volumes:
       - .:/app
-      - ./tests/performance/results:/app/tests/performance/results
+      - ./tests/performance:/app/performance
+      - ./performance-results:/app/results
     environment:
-      - NODE_ENV=test
-      - PERFORMANCE_TEST=true
-    command: python3 tests/performance/benchmark_3a2c2412-e1a1-455b-ad87-0514e8d942fe.py
-    depends_on:
-      app:
-        condition: service_healthy
+      - PYTHONUNBUFFERED=1
+    command: python -m pytest performance/ --benchmark-only
 
 networks:
   default:
     driver: bridge
     ipam:
-      driver: default
       config:
         - subnet: 172.28.0.0/16
 
 volumes:
   node_modules:
+  performance-results:
+
+# Development tools and settings
+x-development:
+  ide:
+    vscode:
+      extensions:
+        - dbaeumer.vscode-eslint
+        - esbenp.prettier-vscode
+        - ms-python.python
+  git:
+    hooks:
+      pre-commit: npm run lint && npm run test
+  npm:
+    scripts:
+      dev: "nodemon --inspect=0.0.0.0:9229 src/index.js"
+      test: "jest --coverage"
+      lint: "eslint src/**/*.js"

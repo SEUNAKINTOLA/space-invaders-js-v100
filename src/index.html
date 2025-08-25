@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Previous head section remains unchanged until script -->
+
+<script type="module">
+    // Import constants from the available config file
+    import { CANVAS } from './src/config/constants.js';
+    
+    // Import core modules - these are available based on the project structure
+    import Canvas from './src/core/Canvas.js';
+    import GameLoop from './src/core/GameLoop.js';
+    import Renderer from './src/core/Renderer.js';
+    import PerformanceMonitor from './src/utils/Performance.js';
+
+    // Initialize game components with error boundary
+    async function initializeGame() {
+        try {
+            // Show loading state
+            const loadingElement = document.getElementById('loading');
+            loadingElement.style.display = 'block';
+
+            // Initialize core components
+            const canvas = new Canvas('gameCanvas');
+            const renderer = new Renderer(canvas);
+            const performanceMonitor = new PerformanceMonitor();
+            const gameLoop = new GameLoop(renderer, performanceMonitor);
+
+            // Configure canvas with constants from config
+            canvas.setDimensions(CANVAS.WIDTH, CANVAS.HEIGHT);
+            canvas.setPixelRatio(CANVAS.PIXEL_RATIO);
+
+            // Hide loading state
+            loadingElement.style.display = 'none';
+
+            // Start game loop
+            gameLoop.start();
+
+            // Global error handler
+            window.onerror = (msg, url, line, col, error) => {
+                handleError('Runtime Error', error);
+                gameLoop.stop();
+            };
+
+        } catch (error) {
+            handleError('Initialization Error', error);
+        }
+    }
+
+    // Centralized error handling
+    function handleError(type, error) {
+        console.error(`${type}:`, error);
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.style.display = 'block';
+        errorDiv.textContent = `${type}. Please refresh the page.`;
+        
+        // Hide loading indicator if visible
+        document.getElementById('loading').style.display = 'none';
+    }
+
+    // Initialize game when DOM is ready
+    document.addEventListener('DOMContentLoaded', initializeGame);
+</script>
+
+<!-- Rest of the HTML remains unchanged -->
+</html>
