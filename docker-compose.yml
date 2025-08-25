@@ -1,78 +1,111 @@
 # docker-compose.yml
+# Space Invaders JS V100 Development Environment
+# Purpose: Defines the complete local development environment with hot-reloading,
+# testing capabilities, and development tools.
+
 version: '3.8'
 
 services:
-  # Development environment
-  dev:
+  # Main development application service
+  app:
     build:
       context: .
       dockerfile: Dockerfile
       target: development
+    container_name: space-invaders-dev
     volumes:
       - .:/app
       - /app/node_modules
     ports:
-      - "3000:3000"
+      - "3000:3000" # Main application
+      - "9229:9229" # Debug port
     environment:
       - NODE_ENV=development
-      - PORT=3000
+      - DEBUG=space-invaders:*
     command: npm run dev
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - space-invaders-net
 
-  # Test environment
+  # Test runner service for continuous testing
   test:
     build:
       context: .
       dockerfile: Dockerfile
       target: test
+    container_name: space-invaders-test
     volumes:
       - .:/app
       - /app/node_modules
     environment:
       - NODE_ENV=test
       - JEST_JUNIT_OUTPUT_DIR=/app/test-results
-    command: npm run test
+    command: npm run test:watch
+    depends_on:
+      - app
+    networks:
+      - space-invaders-net
 
-  # Integration tests with browser environment
-  integration:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: test
+  # Performance monitoring service
+  monitoring:
+    image: grafana/grafana:latest
+    container_name: space-invaders-monitoring
+    ports:
+      - "3001:3000"
     volumes:
-      - .:/app
-      - /app/node_modules
+      - grafana-storage:/var/lib/grafana
     environment:
-      - NODE_ENV=test
-      - BROWSER_TESTS=true
-    command: npm run test:integration
+      - GF_SECURITY_ADMIN_PASSWORD=secret
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+    networks:
+      - space-invaders-net
 
-  # Performance testing environment
-  perf:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: test
+  # Metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: space-invaders-prometheus
+    ports:
+      - "9090:9090"
     volumes:
-      - .:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=test
-      - PERFORMANCE_TESTS=true
-    command: npm run test:performance
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-
-networks:
-  default:
-    driver: bridge
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-storage:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - space-invaders-net
 
 volumes:
-  node_modules:
+  grafana-storage:
+  prometheus-storage:
+
+networks:
+  space-invaders-net:
+    driver: bridge
+
+# Development environment configuration
+x-development:
+  app:
+    environment:
+      - NODE_ENV=development
+      - ENABLE_HOT_RELOAD=true
+      - LOG_LEVEL=debug
+      - PERFORMANCE_MONITORING=true
+      - ENABLE_DEBUG_TOOLS=true
+
+# Testing environment overrides
+x-test:
+  app:
+    environment:
+      - NODE_ENV=test
+      - JEST_COVERAGE=true
+      - TEST_REPORTER=junit
+      - ENABLE_DEBUG_TOOLS=false
