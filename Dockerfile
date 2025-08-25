@@ -1,91 +1,105 @@
-# -----------------------------
-# Stage 1: Development
-# -----------------------------
-FROM node:18-alpine AS development
+# syntax=docker/dockerfile:1.4
 
-# Security: Run as non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# ===== Stage 1: Development =====
+FROM node:20.9-slim AS development
+LABEL maintainer="Space Invaders JS Team"
+LABEL description="Development environment for Space Invaders JS"
+
+# Set working directory
 WORKDIR /app
 
-# Install development dependencies
-COPY package*.json ./
-RUN npm ci --only=development
+# Install development dependencies and security updates
+RUN apt-get update && apt-get upgrade -y && \
+    apt-get install -y --no-install-recommends \
+    python3 \
+    python3-pip \
+    git \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip3 install --no-cache-dir pytest pytest-cov
 
-# Copy source code
+# Copy project files
 COPY . .
 
-# Set ownership to non-root user
-RUN chown -R appuser:appgroup /app
+# Install Node.js dependencies (if package.json exists)
+# Note: Currently no package.json in project, but prepared for future
+ONBUILD COPY package*.json ./
+ONBUILD RUN if [ -f package.json ]; then npm install; fi
 
-USER appuser
+# Development port exposure
+EXPOSE 3000
 
-# Development server
-CMD ["npm", "run", "dev"]
+# Default development command
+CMD ["python3", "-m", "http.server", "3000"]
 
-# -----------------------------
-# Stage 2: Testing
-# -----------------------------
+# ===== Stage 2: Testing =====
 FROM development AS testing
 
+# Install additional testing dependencies
+RUN pip3 install --no-cache-dir \
+    selenium \
+    webdriver_manager \
+    pytest-xdist
+
 # Run tests
-CMD ["npm", "run", "test"]
+CMD ["pytest", "tests/", "-v", "--cov=src"]
 
-# -----------------------------
-# Stage 3: Build
-# -----------------------------
-FROM node:18-alpine AS builder
+# ===== Stage 3: Production Build =====
+FROM node:20.9-slim AS builder
+WORKDIR /build
 
-WORKDIR /app
+# Copy only necessary files for production
+COPY src/ ./src/
+COPY index.html ./
+COPY src/styles/ ./src/styles/
 
-# Install production dependencies
-COPY package*.json ./
-RUN npm ci --only=production
+# Production optimization placeholder
+# (Future: Add minification, bundling when build tools are added)
 
-# Copy source files
-COPY . .
+# ===== Stage 4: Production Runtime =====
+FROM nginx:1.25-alpine AS production
+LABEL maintainer="Space Invaders JS Team"
+LABEL description="Production environment for Space Invaders JS"
 
-# Build production assets
-RUN npm run build
+# Install security updates
+RUN apk update && apk upgrade && \
+    rm -rf /var/cache/apk/*
 
-# -----------------------------
-# Stage 4: Production
-# -----------------------------
-FROM nginx:alpine AS production
+# Copy built files from builder stage
+COPY --from=builder /build/ /usr/share/nginx/html/
 
-# Security: Run as non-root user
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+# Security headers and configuration
+RUN echo 'server { \
+    listen 80; \
+    server_name localhost; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    # Security headers \
+    add_header X-Frame-Options "SAMEORIGIN"; \
+    add_header X-XSS-Protection "1; mode=block"; \
+    add_header X-Content-Type-Options "nosniff"; \
+    add_header Content-Security-Policy "default-src '\''self'\''; img-src '\''self'\'' data:; style-src '\''self'\'' '\''unsafe-inline'\''"; \
+    # Compression \
+    gzip on; \
+    gzip_types text/plain text/css application/javascript; \
+    # Cache control \
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ { \
+        expires 30d; \
+        add_header Cache-Control "public, no-transform"; \
+    } \
+    location / { \
+        try_files $uri $uri/ /index.html; \
+    } \
+}' > /etc/nginx/conf.d/default.conf
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Copy built assets from builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Security: Remove default nginx user
-RUN rm /etc/nginx/conf.d/default.conf
-
-# Set correct permissions
-RUN chown -R appuser:appgroup /usr/share/nginx/html && \
-    chown -R appuser:appgroup /var/cache/nginx && \
-    chown -R appuser:appgroup /var/log/nginx && \
-    chown -R appuser:appgroup /etc/nginx/conf.d && \
-    touch /var/run/nginx.pid && \
-    chown -R appuser:appgroup /var/run/nginx.pid
-
-# Security headers
-RUN echo "add_header X-Frame-Options 'SAMEORIGIN';" >> /etc/nginx/conf.d/security.conf && \
-    echo "add_header X-Content-Type-Options 'nosniff';" >> /etc/nginx/conf.d/security.conf && \
-    echo "add_header X-XSS-Protection '1; mode=block';" >> /etc/nginx/conf.d/security.conf
-
-# Use non-root user
-USER appuser
-
-# Expose port
+# Expose production port
 EXPOSE 80
+
+# Use non-root user for security
+RUN adduser -D -H -u 1000 -s /sbin/nologin www-data
+USER www-data
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s \
-    CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
+    CMD wget --quiet --tries=1 --spider http://localhost:80 || exit 1
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Default command uses nginx's default entrypoint
