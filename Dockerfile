@@ -1,105 +1,102 @@
 # syntax=docker/dockerfile:1.4
+# Space Invaders JS Development Environment
+# Optimized for development workflow with security and performance considerations
 
-# ===== Stage 1: Development =====
-FROM node:20.9-slim AS development
-LABEL maintainer="Space Invaders JS Team"
-LABEL description="Development environment for Space Invaders JS"
+# Use Node.js LTS with Alpine for minimal attack surface
+FROM node:20-alpine AS base
+
+# Set secure defaults
+ENV NODE_ENV=development \
+    # Reduce npm verbosity and disable update notifications
+    NPM_CONFIG_LOGLEVEL=warn \
+    NPM_CONFIG_UPDATE_NOTIFIER=false \
+    # Ensure proper handling of Node.js processes
+    NODE_OPTIONS="--max-old-space-size=4096" \
+    # Set secure permissions
+    NPM_CONFIG_UNSAFE_PERM=false
+
+# Create non-root user for security
+RUN addgroup -S spaceinvaders && \
+    adduser -S -G spaceinvaders gamedev && \
+    mkdir -p /app && \
+    chown -R gamedev:spaceinvaders /app
 
 # Set working directory
 WORKDIR /app
 
-# Install development dependencies and security updates
-RUN apt-get update && apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    git \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip3 install --no-cache-dir pytest pytest-cov
+# Install dependencies first (for better caching)
+COPY --chown=gamedev:spaceinvaders package*.json ./
 
-# Copy project files
-COPY . .
+# Install production dependencies
+RUN npm ci --only=production && \
+    # Clean npm cache
+    npm cache clean --force
 
-# Install Node.js dependencies (if package.json exists)
-# Note: Currently no package.json in project, but prepared for future
-ONBUILD COPY package*.json ./
-ONBUILD RUN if [ -f package.json ]; then npm install; fi
+# Development dependencies stage
+FROM base AS dev
+ENV NODE_ENV=development
 
-# Development port exposure
+# Install development dependencies
+RUN npm ci && \
+    # Add common development tools
+    apk add --no-cache \
+        git \
+        curl \
+        python3 \
+        make \
+        g++ \
+        # Required for some npm packages
+        python3-dev
+
+# Copy source code
+COPY --chown=gamedev:spaceinvaders . .
+
+# Security scanning and linting
+RUN npm audit && \
+    # Run linting if eslint is configured
+    if [ -f ".eslintrc.js" ]; then npm run lint; fi
+
+# Expose development port
 EXPOSE 3000
 
-# Default development command
-CMD ["python3", "-m", "http.server", "3000"]
+# Switch to non-root user
+USER gamedev
 
-# ===== Stage 2: Testing =====
-FROM development AS testing
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/health || exit 1
 
-# Install additional testing dependencies
-RUN pip3 install --no-cache-dir \
-    selenium \
-    webdriver_manager \
-    pytest-xdist
+# Development command
+CMD ["npm", "run", "dev"]
 
-# Run tests
-CMD ["pytest", "tests/", "-v", "--cov=src"]
+# Production build stage
+FROM base AS prod
+ENV NODE_ENV=production
 
-# ===== Stage 3: Production Build =====
-FROM node:20.9-slim AS builder
-WORKDIR /build
+# Copy only necessary files
+COPY --chown=gamedev:spaceinvaders \
+    src/ \
+    public/ \
+    *.html \
+    ./
 
-# Copy only necessary files for production
-COPY src/ ./src/
-COPY index.html ./
-COPY src/styles/ ./src/styles/
-
-# Production optimization placeholder
-# (Future: Add minification, bundling when build tools are added)
-
-# ===== Stage 4: Production Runtime =====
-FROM nginx:1.25-alpine AS production
-LABEL maintainer="Space Invaders JS Team"
-LABEL description="Production environment for Space Invaders JS"
-
-# Install security updates
-RUN apk update && apk upgrade && \
-    rm -rf /var/cache/apk/*
-
-# Copy built files from builder stage
-COPY --from=builder /build/ /usr/share/nginx/html/
-
-# Security headers and configuration
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    # Security headers \
-    add_header X-Frame-Options "SAMEORIGIN"; \
-    add_header X-XSS-Protection "1; mode=block"; \
-    add_header X-Content-Type-Options "nosniff"; \
-    add_header Content-Security-Policy "default-src '\''self'\''; img-src '\''self'\'' data:; style-src '\''self'\'' '\''unsafe-inline'\''"; \
-    # Compression \
-    gzip on; \
-    gzip_types text/plain text/css application/javascript; \
-    # Cache control \
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ { \
-        expires 30d; \
-        add_header Cache-Control "public, no-transform"; \
-    } \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+# Build for production
+RUN npm run build
 
 # Expose production port
 EXPOSE 80
 
-# Use non-root user for security
-RUN adduser -D -H -u 1000 -s /sbin/nologin www-data
-USER www-data
+# Switch to non-root user
+USER gamedev
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s \
-    CMD wget --quiet --tries=1 --spider http://localhost:80 || exit 1
+# Production command
+CMD ["npm", "start"]
 
-# Default command uses nginx's default entrypoint
+# Testing stage
+FROM dev AS test
+ENV NODE_ENV=test \
+    # Configure test coverage requirements
+    COVERAGE_THRESHOLD=80
+
+# Run tests
+CMD ["npm", "test"]
