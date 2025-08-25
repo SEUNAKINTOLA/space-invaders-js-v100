@@ -1,0 +1,125 @@
+# .github/workflows/ci.yml
+# Comprehensive CI/CD pipeline with focus on performance testing
+# for Space Invaders JS project
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20.x'
+  PERFORMANCE_THRESHOLD: '1000'  # milliseconds
+  MEMORY_THRESHOLD: '512'        # MB
+
+jobs:
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-benchmark memory_profiler psutil
+
+      - name: Run Performance Benchmarks
+        id: benchmarks
+        run: |
+          python tests/performance/benchmark_3a2c2412-e1a1-455b-ad87-0514e8d942fe.py
+        continue-on-error: true
+
+      - name: Analyze Performance Results
+        run: |
+          echo "Analyzing performance metrics..."
+          python -c "
+          import json
+          import sys
+          
+          try:
+              with open('benchmark_results.json', 'r') as f:
+                  results = json.load(f)
+              
+              avg_frame_time = results.get('avg_frame_time', float('inf'))
+              max_memory = results.get('max_memory_mb', float('inf'))
+              
+              if avg_frame_time > float('${{ env.PERFORMANCE_THRESHOLD }}'):
+                  print(f'❌ Performance threshold exceeded: {avg_frame_time}ms > ${{ env.PERFORMANCE_THRESHOLD }}ms')
+                  sys.exit(1)
+              
+              if max_memory > float('${{ env.MEMORY_THRESHOLD }}'):
+                  print(f'❌ Memory threshold exceeded: {max_memory}MB > ${{ env.MEMORY_THRESHOLD }}MB')
+                  sys.exit(1)
+              
+              print('✅ All performance metrics within acceptable thresholds')
+          except Exception as e:
+              print(f'Error analyzing results: {e}')
+              sys.exit(1)
+          "
+
+      - name: Upload Performance Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: |
+            benchmark_results.json
+            performance_report.md
+          retention-days: 14
+
+      - name: Run E2E Tests
+        run: |
+          python -m pytest tests/e2e/test_3a2c2412-e1a1-455b-ad87-0514e8d942fe_complete.py
+
+      - name: Generate Performance Report
+        if: always()
+        run: |
+          echo "## Performance Test Results" > performance_report.md
+          echo "### Test Environment" >> performance_report.md
+          echo "- OS: Ubuntu Latest" >> performance_report.md
+          echo "- Python: ${{ env.PYTHON_VERSION }}" >> performance_report.md
+          echo "### Metrics" >> performance_report.md
+          python -c "
+          import json
+          try:
+              with open('benchmark_results.json', 'r') as f:
+                  results = json.load(f)
+              with open('performance_report.md', 'a') as report:
+                  report.write(f'\n- Average Frame Time: {results.get(\"avg_frame_time\", \"N/A\")}ms')
+                  report.write(f'\n- Peak Memory Usage: {results.get(\"max_memory_mb\", \"N/A\")}MB')
+                  report.write(f'\n- Total Test Duration: {results.get(\"total_duration\", \"N/A\")}s')
+          except Exception as e:
+              print(f'Error generating report: {e}')
+          "
+
+      - name: Check Test Results
+        if: steps.benchmarks.outcome == 'failure'
+        run: |
+          echo "::error::Performance tests failed to meet thresholds"
+          exit 1
+
+  notify:
+    needs: [performance-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Notification
+        run: |
+          echo "Pipeline completed with status: ${{ needs.performance-tests.result }}"
