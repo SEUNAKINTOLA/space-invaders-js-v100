@@ -1,0 +1,96 @@
+# Version Control
+.git
+.gitignore
+.github/
+
+# Development and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Test files
+tests/
+coverage/
+jest.config.js
+*.test.js
+*.spec.js
+*.perf.js
+
+# Documentation
+docs/
+*.md
+LICENSE
+
+# Build artifacts
+dist/
+build/
+*.log
+.cache/
+
+# Docker
+.docker/
+docker-compose*.yml
+Dockerfile*
+
+# Environment files
+.env*
+*.env
+.browserslistrc
+
+# Debug files
+*.map
+debug/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Performance and benchmark files
+*benchmark*.py
+*performance*.js
+
+# Configuration files not needed in container
+.eslintrc.js
+.prettierrc
+.browserslistrc
+webpack.config.js
+webpack.prod.js
+
+# Editor configuration
+.editorconfig
+
+# Continuous Integration
+.travis.yml
+.gitlab-ci.yml
+.circleci/
+
+# Nginx configuration (handled separately in deployment)
+nginx.conf
+
+# Assets source files (use built/optimized versions instead)
+src/assets/**/*.psd
+src/assets/**/*.ai
+src/assets/**/*.sketch
+
+# Backup files
+**/*.bak
+**/*.backup
+
+# Local development certificates
+*.pem
+*.crt
+*.key
+
+# System files
+.DS_Store
+Thumbs.db
