@@ -1,0 +1,171 @@
+/**
+ * Space Invaders JS V100 - Main Stylesheet
+ * =======================================
+ * Core styles for the Space Invaders game implementation
+ * 
+ * Architecture:
+ * - Mobile-first responsive design
+ * - CSS custom properties for theming
+ * - Performance-optimized animations
+ * - Modular component organization
+ * 
+ * Browser Support:
+ * - Modern browsers (Chrome, Firefox, Safari, Edge)
+ * - Fallbacks provided where needed
+ */
+
+/* CSS Reset & Base Styles
+   ====================== */
+:root {
+  /* Game Theme Colors */
+  --color-background: #000000;
+  --color-text: #ffffff;
+  --color-primary: #00ff00;
+  --color-secondary: #ff0000;
+  --color-accent: #0000ff;
+  
+  /* Typography */
+  --font-main: 'Press Start 2P', monospace;
+  --font-fallback: monospace;
+  
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 2rem;
+  --space-xl: 4rem;
+  
+  /* Animation Timings */
+  --animation-fast: 100ms;
+  --animation-normal: 200ms;
+  --animation-slow: 300ms;
+}
+
+/* Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Base Styles */
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-main), var(--font-fallback);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Game Container
+   ============= */
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-md);
+}
+
+/* Canvas Styles
+   ============ */
+canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  max-width: 100%;
+  height: auto;
+  box-shadow: 0 0 var(--space-md) rgba(0, 255, 0, 0.2);
+}
+
+/* UI Elements
+   ========== */
+.ui-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.score-display {
+  position: absolute;
+  top: var(--space-md);
+  left: var(--space-md);
+  font-size: 1.2rem;
+  color: var(--color-primary);
+}
+
+.lives-display {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* Game States
+   ========== */
+.game-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  opacity: 0;
+  transition: opacity var(--animation-normal) ease;
+}
+
+.game-state.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Responsive Design
+   ================ */
+@media (max-width: 768px) {
+  :root {
+    /* Adjust spacing for mobile */
+    --space-md: 0.75rem;
+    --space-lg: 1.5rem;
+  }
+  
+  .score-display,
+  .lives-display {
+    font-size: 1rem;
+  }
+}
+
+/* Performance Optimizations
+   ======================= */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print Styles
+   =========== */
+@media print {
+  .game-container {
+    display: none;
+  }
+}
+
+/* High Contrast Mode
+   ================= */
+@media (prefers-contrast: high) {
+  :root {
+    --color-primary: #ffffff;
+    --color-secondary: #ffffff;
+    --color-accent: #ffffff;
+  }
+}
