@@ -1,0 +1,181 @@
+/**
+ * Space Invaders - Main Stylesheet
+ * ===============================
+ * 
+ * Core stylesheet providing base game styling, layout, and responsive design.
+ * Follows BEM naming convention and modern CSS best practices.
+ *
+ * Features:
+ * - Responsive game container
+ * - Cross-browser compatibility
+ * - Performance optimized animations
+ * - Accessible color schemes
+ * - Dark mode support
+ */
+
+/* Reset and Base Styles
+   ==================== */
+:root {
+  /* Color Variables */
+  --color-primary: #00ff00;
+  --color-background: #000000;
+  --color-text: #ffffff;
+  --color-accent: #ff0000;
+  --color-overlay: rgba(0, 0, 0, 0.8);
+
+  /* Spacing Variables */
+  --spacing-unit: 8px;
+  --game-max-width: 800px;
+  
+  /* Animation Variables */
+  --transition-speed: 0.3s;
+  --animation-timing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Base Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Document Setup */
+html {
+  font-size: 16px;
+  line-height: 1.5;
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Game Container */
+.game-container {
+  width: 100%;
+  max-width: var(--game-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-unit);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+/* Canvas Styling */
+.game-canvas {
+  background-color: var(--color-background);
+  border: 2px solid var(--color-primary);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  max-width: 100%;
+  height: auto;
+}
+
+/* UI Elements */
+.game-ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: var(--spacing-unit);
+  z-index: 10;
+}
+
+.game-score {
+  font-size: 1.5rem;
+  color: var(--color-primary);
+  text-shadow: 0 0 10px var(--color-primary);
+}
+
+/* Overlay States */
+.game-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-speed) var(--animation-timing);
+}
+
+.game-overlay--visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Buttons and Controls */
+.game-button {
+  background-color: transparent;
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  padding: calc(var(--spacing-unit) * 1.5) calc(var(--spacing-unit) * 3);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all var(--transition-speed) var(--animation-timing);
+}
+
+.game-button:hover,
+.game-button:focus {
+  background-color: var(--color-primary);
+  color: var(--color-background);
+  outline: none;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #000000;
+    --color-text: #ffffff;
+  }
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  :root {
+    --game-max-width: 100%;
+  }
+  
+  .game-score {
+    font-size: 1.25rem;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .game-container {
+    display: none;
+  }
+}
+
+/* High Contrast Mode */
+@media (forced-colors: active) {
+  :root {
+    --color-primary: CanvasText;
+    --color-background: Canvas;
+    --color-text: CanvasText;
+    --color-accent: LinkText;
+  }
+}
