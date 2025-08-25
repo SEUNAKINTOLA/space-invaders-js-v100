@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="Space Invaders JS - A modern implementation of the classic arcade game">
+    
+    <!-- Security headers -->
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'self'; 
+                   script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
+                   style-src 'self' 'unsafe-inline';
+                   img-src 'self' data: blob:;
+                   media-src 'self';
+                   font-src 'self';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta name="referrer" content="strict-origin">
+
+    <title>Space Invaders JS</title>
+
+    <!-- Preload critical assets -->
+    <link rel="preload" href="styles/main.css" as="style">
+    <link rel="preload" href="core/GameLoop.js" as="script">
+    
+    <!-- Application styles -->
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/canvas.css">
+    <link rel="stylesheet" href="styles/controls.css">
+    <link rel="stylesheet" href="styles/score.css">
+    <link rel="stylesheet" href="styles/audio-controls.css">
+    <link rel="stylesheet" href="styles/volume.css">
+    <link rel="stylesheet" href="styles/cross-browser.css">
+</head>
+<body>
+    <!-- Game container -->
+    <main id="game-container" role="main" aria-label="Space Invaders Game">
+        <!-- Loading screen -->
+        <div id="loading-screen" aria-live="polite">
+            <h1>Space Invaders JS</h1>
+            <div class="loading-spinner"></div>
+            <p>Loading game assets...</p>
+        </div>
+
+        <!-- Game canvas -->
+        <canvas id="game-canvas" 
+                aria-label="Game Area"
+                role="img"
+                tabindex="0">
+            Your browser does not support the HTML5 canvas element.
+        </canvas>
+
+        <!-- Game UI -->
+        <div id="game-ui" aria-live="polite">
+            <div id="score-display"></div>
+            <div id="audio-controls">
+                <div id="volume-control"></div>
+            </div>
+        </div>
+
+        <!-- Error message container -->
+        <div id="error-container" 
+             role="alert" 
+             aria-live="assertive" 
+             hidden>
+        </div>
+    </main>
+
+    <!-- Game initialization -->
+    <script type="module">
+        // Error handling and reporting
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.textContent = 'An error occurred. Please refresh the page.';
+            errorContainer.hidden = false;
+            console.error('Game Error:', {msg, url, lineNo, columnNo, error});
+            return false;
+        };
+
+        // Performance monitoring
+        const gameMetrics = {
+            startTime: performance.now(),
+            fps: [],
+            loadTime: 0
+        };
+
+        // Initialize game when DOM is ready
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const loadingScreen = document.getElementById('loading-screen');
+                
+                // Load game modules
+                const gameModules = await Promise.all([
+                    import('./core/GameLoop.js'),
+                    import('./core/Canvas.js'),
+                    import('./managers/GameStateManager.js')
+                ]);
+
+                // Hide loading screen
+                loadingScreen.style.display = 'none';
+                
+                // Record load time
+                gameMetrics.loadTime = performance.now() - gameMetrics.startTime;
+                
+                // Initialize game
+                const game = gameModules[0].default;
+                game.init();
+                
+            } catch (error) {
+                console.error('Failed to initialize game:', error);
+                document.getElementById('error-container').textContent = 
+                    'Failed to load game. Please check your connection and refresh.';
+            }
+        });
+    </script>
+
+    <!-- Accessibility enhancements -->
+    <script>
+        // Keyboard navigation support
+        document.getElementById('game-canvas').addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                // Handle focus management
+            }
+        });
+    </script>
+</body>
+</html>

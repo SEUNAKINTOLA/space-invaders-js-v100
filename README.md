@@ -1,90 +1,68 @@
-### Performance Benchmarks
+## 📊 Performance Targets
 
-Key metrics monitored:
-- Frame time (target: < 16.67ms)
-- Memory usage
-- Entity update time
-- Render pipeline performance
+- 60 FPS target frame rate
+- < 16.67ms frame time
+- Efficient memory management
+- Optimized collision detection
+- Minimal garbage collection impact
 
-## 🔍 Development Guidelines
+## 🔒 Security Considerations
 
-### Canvas Best Practices
+- Input validation for all user interactions
+- Secure resource loading
+- Cross-browser compatibility checks
+- Performance degradation safeguards
 
-1. **Optimization**
-   - Use `requestAnimationFrame`
-   - Implement object pooling
-   - Batch rendering operations
-   - Use appropriate canvas dimensions
+## 📝 Contributing
 
-2. **Memory Management**
-   - Clear unused references
-   - Dispose of unused canvas contexts
-   - Manage sprite sheet memory
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-### Game Loop Implementation
+### Commit Guidelines
 
-1. **Fixed Timestep**
-   - Consistent physics updates
-   - Deterministic game state
-   - Frame rate independence
-
-2. **State Management**
-   - Clear state transitions
-   - Predictable update cycle
-   - Error boundary handling
-
-## 🛠️ Performance Optimization
-
-### Rendering Optimizations
-- Layer management
-- Dirty rectangle tracking
-- Sprite batching
-- Canvas state minimization
-
-### Memory Management
-- Object pooling
-- Texture atlases
-- Garbage collection optimization
-- Asset preloading
-
-## 📊 Monitoring and Debugging
-
-### Performance Metrics
-- FPS counter
-- Frame time graph
-- Memory usage tracking
-- Entity count monitoring
-
-### Debug Tools
-- State inspector
-- Entity hierarchy viewer
-- Performance profiler
-- Canvas debug overlay
-
-## 🔐 Security Considerations
-
-1. **Input Validation**
-   - Sanitize all user inputs
-   - Validate asset sources
-   - Secure event handling
-
-2. **Resource Loading**
-   - Validate asset integrity
-   - Implement content security policy
-   - Safe error handling
-
-## 📝 Documentation Standards
-
-All code should be documented following these guidelines:
-- JSDoc comments for functions
-- Type annotations
-- Architecture decisions
-- Performance implications
-
-## 🤝 Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+- Use semantic commit messages
+- Include relevant test coverage
+- Update documentation as needed
+- Follow existing code patterns
 
 ## 📜 License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+[License Type] - See LICENSE file for details
+
+## 🎮 Game Controls
+
+- Left Arrow / A: Move left
+- Right Arrow / D: Move right
+- Space: Shoot
+- P: Pause game
+- ESC: Return to menu
+
+## 🔍 Debug Mode
+
+Enable debug mode by setting `DEBUG.ENABLED = true` in `src/config/constants.js`:
+- FPS counter
+- Hitbox visualization
+- Performance metrics
+- Debug logging
+
+## 📚 Additional Documentation
+
+- [Game Loop Architecture](docs/architecture/game-loop.md)
+- [Rendering System](docs/architecture/rendering.md)
+
+## ⚡ Performance Tips
+
+1. Use recommended browser settings
+2. Close unnecessary background applications
+3. Enable hardware acceleration
+4. Monitor system resources
+
+## 🤝 Support
+
+For issues and feature requests, please use the GitHub issue tracker.
+
+---
+Built with ❤️ by [Your Team Name]

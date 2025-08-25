@@ -1,0 +1,141 @@
+# .github/workflows/ci.yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  validate:
+    name: Validate Project Structure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Validate Directory Structure
+        run: |
+          required_dirs=(
+            "src/core"
+            "src/config"
+            "src/utils"
+            "tests/unit"
+            "tests/integration"
+            "tests/e2e"
+            "tests/performance"
+          )
+          for dir in "${required_dirs[@]}"; do
+            if [ ! -d "$dir" ]; then
+              echo "❌ Missing required directory: $dir"
+              exit 1
+            fi
+          done
+          echo "✅ Directory structure validation passed"
+
+  docker-build:
+    name: Docker Build
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Development Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          load: true
+          tags: space-invaders:dev
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: development
+
+      - name: Test Development Container
+        run: |
+          docker run --rm space-invaders:dev echo "Development image built successfully"
+
+      - name: Build Production Image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          load: true
+          tags: space-invaders:prod
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          target: production
+
+      - name: Test Production Container
+        run: |
+          docker run --rm space-invaders:prod echo "Production image built successfully"
+
+  integration-tests:
+    name: Integration Tests
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Run Integration Tests with Docker Compose
+        run: |
+          docker-compose -f docker-compose.test.yml up --build --exit-code-from tests
+        env:
+          CI: true
+
+  performance:
+    name: Performance Tests
+    needs: integration-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Run Performance Tests
+        run: |
+          python3 tests/performance/benchmark_3a2c2412-e1a1-455b-ad87-0514e8d942fe.py
+        env:
+          PERFORMANCE_THRESHOLD: "16.67"
+          MEMORY_LIMIT: "512"
+
+  security:
+    name: Security Scan
+    needs: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'space-invaders:prod'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+  cleanup:
+    name: Cleanup
+    needs: [integration-tests, performance, security]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Remove Docker images
+        run: |
+          docker image prune -af
+          docker container prune -f
