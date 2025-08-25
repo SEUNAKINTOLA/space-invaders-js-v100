@@ -1,9 +1,9 @@
 # Version Control
 .git
 .gitignore
-.github/
+.gitattributes
 
-# Development and IDE files
+# Development Environment
 .vscode/
 .idea/
 *.swp
@@ -11,86 +11,111 @@
 .DS_Store
 Thumbs.db
 
-# Node.js
+# Dependencies and Build Artifacts
 node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-
-# Test files
-tests/
+dist/
+build/
 coverage/
-jest.config.js
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test Files
+tests/
+__tests__/
 *.test.js
 *.spec.js
-*.perf.js
+jest.config.js
+coverage/
 
 # Documentation
 docs/
 *.md
 LICENSE
 
-# Build artifacts
-dist/
-build/
-*.log
-.cache/
-
-# Docker
+# Docker Files (except the main ones)
 .docker/
 docker-compose*.yml
-Dockerfile*
+!docker-compose.yml
+!docker-compose.test.yml
 
-# Environment files
-.env*
-*.env
-.browserslistrc
+# Environment Files
+.env
+.env.*
+!.env.example
 
-# Debug files
+# Debug Files
 *.map
 debug/
 
-# Temporary files
+# Temporary Files
 tmp/
 temp/
 *.tmp
 
-# Performance and benchmark files
-*benchmark*.py
-*performance*.js
+# Performance and Benchmark Data
+benchmark/
+performance-logs/
 
-# Configuration files not needed in container
-.eslintrc.js
-.prettierrc
-.browserslistrc
-webpack.config.js
-webpack.prod.js
-
-# Editor configuration
+# Editor Configuration
 .editorconfig
+.prettierrc
+.eslintrc*
 
-# Continuous Integration
-.travis.yml
-.gitlab-ci.yml
+# CI/CD
+.github/
+.gitlab/
 .circleci/
+.travis.yml
+*.yml
+!docker-compose.yml
+!docker-compose.test.yml
 
-# Nginx configuration (handled separately in deployment)
-nginx.conf
+# Backup Files
+*.bak
+*.backup
+*~
 
-# Assets source files (use built/optimized versions instead)
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project Specific
 src/assets/**/*.psd
 src/assets/**/*.ai
-src/assets/**/*.sketch
+*.sketch
+*.fig
 
-# Backup files
-**/*.bak
-**/*.backup
+# Large Media Files
+*.mp4
+*.mov
+*.wav
+*.mp3
+*.avi
+*.wmv
+*.flv
+*.mkv
 
-# Local development certificates
-*.pem
-*.crt
-*.key
+# Logs and Databases
+*.log
+*.sql
+*.sqlite
+*.sqlite3
 
-# System files
-.DS_Store
-Thumbs.db
+# Cache Directories
+.cache/
+.npm/
+.yarn/
+
+# Misc
+*.gz
+*.zip
+*.tar
+*.rar
+*.7z

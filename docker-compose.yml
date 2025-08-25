@@ -1,9 +1,8 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
-  # Development environment
-  dev:
+  # Main development service
+  app:
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,17 +12,26 @@ services:
       - /app/node_modules
     ports:
       - "3000:3000"
+      - "9229:9229" # Debug port
     environment:
       - NODE_ENV=development
-      - PORT=3000
+      - DEBUG=true
     command: npm run dev
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
 
-  # Test environment
+  # Test service for running automated tests
   test:
     build:
       context: .
@@ -34,24 +42,13 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=test
-      - JEST_JUNIT_OUTPUT_DIR=/app/test-results
+      - DEBUG=false
     command: npm run test
+    depends_on:
+      app:
+        condition: service_healthy
 
-  # Integration tests with browser environment
-  integration:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: test
-    volumes:
-      - .:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=test
-      - BROWSER_TESTS=true
-    command: npm run test:integration
-
-  # Performance testing environment
+  # Performance testing service
   perf:
     build:
       context: .
@@ -59,20 +56,22 @@ services:
       target: test
     volumes:
       - .:/app
-      - /app/node_modules
+      - ./tests/performance/results:/app/tests/performance/results
     environment:
       - NODE_ENV=test
-      - PERFORMANCE_TESTS=true
-    command: npm run test:performance
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
+      - PERFORMANCE_TEST=true
+    command: python3 tests/performance/benchmark_3a2c2412-e1a1-455b-ad87-0514e8d942fe.py
+    depends_on:
+      app:
+        condition: service_healthy
 
 networks:
   default:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
 
 volumes:
   node_modules:
