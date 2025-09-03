@@ -208,3 +208,23 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# GitHub Pages deployment
+deploy/
+.deployment/
+
+# Build artifacts
+dist/
+build/
+
+# Vite cache
+.vite/
+
+# Performance benchmarks
+benchmark_results.json
+performance_report.md
+
+# Test results
+test-results/
+coverage/
+package-lock.json

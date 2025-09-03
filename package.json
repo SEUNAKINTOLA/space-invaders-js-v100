@@ -10,8 +10,12 @@
   },
   "scripts": {
     "start": "vite",
+    "start:prod": "serve -s dist -l 80",
     "build": "vite build",
     "preview": "vite preview",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:preview": "npx cross-env GITHUB_PAGES_BASE=/space-invaders-js-v100/preview/ npm run build",
+    "deploy:production": "npx cross-env GITHUB_PAGES_BASE=/space-invaders-js-v100/ npm run build",
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
@@ -24,11 +28,13 @@
     "validate": "npm-run-all --parallel test lint"
   },
   "dependencies": {
-    "core-js": "^3.35.0"
+    "core-js": "^3.35.0",
+    "serve": "^14.2.4"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
     "@vitest/coverage-v8": "^1.1.0",
+    "cross-env": "^10.0.0",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.0",
