@@ -106,6 +106,19 @@ class Entity {
     }
 
     /**
+     * Gets entity bounding box for collision system
+     * @returns {Object} Bounding box with x, y, width, height
+     */
+    getBoundingBox() {
+        return {
+            x: this.x,
+            y: this.y,
+            width: this.width,
+            height: this.height
+        };
+    }
+
+    /**
      * Checks collision with another entity
      * @param {Entity} other - Entity to check collision with
      * @returns {boolean} True if colliding

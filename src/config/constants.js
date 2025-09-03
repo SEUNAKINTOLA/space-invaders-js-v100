@@ -39,7 +39,7 @@ export const PHYSICS = Object.freeze({
 export const PLAYER = Object.freeze({
   INITIAL_LIVES: 3,
   MOVEMENT_SPEED: 5,
-  SHOOT_COOLDOWN: 250, // ms
+  SHOOT_COOLDOWN: 100, // ms - faster shooting
   SIZE: {
     WIDTH: 32,
     HEIGHT: 32
@@ -79,7 +79,7 @@ export const ENEMY = Object.freeze({
  */
 export const PROJECTILE = Object.freeze({
   PLAYER: {
-    SPEED: 7,
+    SPEED: 50,
     SIZE: { WIDTH: 2, HEIGHT: 10 },
     COLOR: '#ffffff'
   },
@@ -129,10 +129,10 @@ export const PERFORMANCE = Object.freeze({
  * @constant {Object}
  */
 export const DEBUG = Object.freeze({
-  ENABLED: process.env.NODE_ENV === 'development',
+  ENABLED: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
   SHOW_HITBOXES: false,
   SHOW_FPS: true,
-  LOG_LEVEL: process.env.NODE_ENV === 'development' ? 'debug' : 'error'
+  LOG_LEVEL: window.location.hostname === 'localhost' ? 'debug' : 'error'
 });
 
 /**

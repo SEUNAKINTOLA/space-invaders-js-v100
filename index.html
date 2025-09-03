@@ -72,15 +72,18 @@
 
     <!-- Error handling and initialization -->
     <script type="module">
-        // Import constants from the available config file
+        // Import constants and core modules
         import { CANVAS } from './src/config/constants.js';
-        
-        // Import core modules - these are available based on the project structure
         import Canvas from './src/core/Canvas.js';
         import GameLoop from './src/core/GameLoop.js';
         import Renderer from './src/core/Renderer.js';
         import PerformanceMonitor from './src/utils/Performance.js';
+        import Game from './src/core/Game.js';
     
+        // Global game instance
+        let game = null;
+        let gameStarted = false;
+
         // Initialize game components with error boundary
         async function initializeGame() {
             try {
@@ -88,7 +91,7 @@
                 const loadingElement = document.getElementById('loading');
                 loadingElement.style.display = 'block';
     
-                                // Initialize core components with proper config
+                // Initialize core components with proper config
                 const canvas = new Canvas({
                     width: CANVAS.WIDTH,
                     height: CANVAS.HEIGHT,
@@ -101,51 +104,98 @@
                 if (existingCanvas) {
                     existingCanvas.remove();
                 }
-                gameContainer.appendChild(canvas.getElement());
                 
-                const renderer = new Renderer(canvas.getElement());
+                const canvasElement = canvas.getElement();
+                canvasElement.id = 'game-canvas';
+                gameContainer.appendChild(canvasElement);
+                
+                const renderer = new Renderer(canvasElement, {
+                    width: CANVAS.WIDTH,
+                    height: CANVAS.HEIGHT,
+                    useDoubleBuffer: true,
+                    smoothing: false
+                });
+                
                 const performanceMonitor = new PerformanceMonitor();
                 const gameLoop = new GameLoop({
                     targetFPS: CANVAS.FPS,
                     debug: true
                 });
 
+                // Create game instance
+                game = new Game();
+
                 // Set pixel ratio for high DPI displays
                 const pixelRatio = CANVAS.PIXEL_RATIO;
                 if (pixelRatio > 1) {
                     canvas.resize(CANVAS.WIDTH * pixelRatio, CANVAS.HEIGHT * pixelRatio);
-                    canvas.getElement().style.width = `${CANVAS.WIDTH}px`;
-                    canvas.getElement().style.height = `${CANVAS.HEIGHT}px`;
+                    canvasElement.style.width = `${CANVAS.WIDTH}px`;
+                    canvasElement.style.height = `${CANVAS.HEIGHT}px`;
                 }
     
                 // Hide loading state
                 loadingElement.style.display = 'none';
-    
+                gameStarted = true;
+
                 // Start game loop with update and render functions
                 gameLoop.start(
                     // Update function
                     (deltaTime) => {
-                        // Game state update logic will go here
-                        // For now, just track performance
+                        if (game && gameStarted) {
+                            game.update(deltaTime);
+                        }
                     },
                     // Render function
                     () => {
                         performanceMonitor.startFrame();
                         renderer.clear();
                         
-                        // Test rendering - draw a simple rectangle
-                        renderer.drawEntity({
-                            x: 100,
-                            y: 100,
-                            width: 50,
-                            height: 50,
-                            color: '#00ff00'
-                        });
+                        if (game && gameStarted) {
+                            // Render all game entities
+                            const entities = game.getAllEntities();
+                            entities.forEach(entity => {
+                                let color = '#ffffff';
+                                
+                                // Set colors based on entity type
+                                switch (entity.type) {
+                                    case 'PLAYER':
+                                        color = '#00ff00';
+                                        break;
+                                    case 'ENEMY_BASIC':
+                                        color = '#ff0000';
+                                        break;
+                                    case 'PLAYER_PROJECTILE':
+                                        color = '#ffffff';
+                                        break;
+                                    case 'ENEMY_PROJECTILE':
+                                        color = '#ffff00';
+                                        break;
+                                }
+                                
+                                renderer.drawEntity({
+                                    x: entity.x,
+                                    y: entity.y,
+                                    width: entity.width,
+                                    height: entity.height,
+                                    color: color
+                                });
+                            });
+
+                            // Render UI
+                            renderUI(renderer, game.getState());
+                        }
                         
                         renderer.render();
                         performanceMonitor.endFrame();
                     }
                 );
+
+                // Add click handler to start game if in menu
+                canvasElement.addEventListener('click', () => {
+                    if (game && game.getState().current === 'MENU') {
+                        game.startGame();
+                    }
+                });
     
                 // Global error handler
                 window.onerror = (msg, url, line, col, error) => {
@@ -155,6 +205,44 @@
     
             } catch (error) {
                 handleError('Initialization Error', error);
+            }
+        }
+
+        // Render game UI
+        function renderUI(renderer, gameState) {
+            const ctx = renderer.ctx;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '16px Arial';
+            
+            // Score
+            ctx.fillText(`Score: ${gameState.score}`, 10, 30);
+            
+            // Lives
+            ctx.fillText(`Lives: ${gameState.lives}`, 10, 50);
+            
+            // Level
+            ctx.fillText(`Level: ${gameState.level}`, 10, 70);
+            
+            // Game state messages
+            if (gameState.current === 'MENU') {
+                ctx.font = '24px Arial';
+                ctx.fillText('SPACE INVADERS', CANVAS.WIDTH / 2 - 100, CANVAS.HEIGHT / 2 - 50);
+                ctx.font = '16px Arial';
+                ctx.fillText('Click to Start', CANVAS.WIDTH / 2 - 50, CANVAS.HEIGHT / 2);
+                ctx.fillText('Arrow Keys/WASD: Move', CANVAS.WIDTH / 2 - 80, CANVAS.HEIGHT / 2 + 30);
+                ctx.fillText('Space: Shoot', CANVAS.WIDTH / 2 - 50, CANVAS.HEIGHT / 2 + 50);
+                ctx.fillText('P/Esc: Pause', CANVAS.WIDTH / 2 - 50, CANVAS.HEIGHT / 2 + 70);
+            } else if (gameState.current === 'GAME_OVER') {
+                ctx.font = '24px Arial';
+                ctx.fillText('GAME OVER', CANVAS.WIDTH / 2 - 70, CANVAS.HEIGHT / 2);
+                ctx.font = '16px Arial';
+                ctx.fillText(`Final Score: ${gameState.score}`, CANVAS.WIDTH / 2 - 60, CANVAS.HEIGHT / 2 + 30);
+                ctx.fillText('Refresh to Play Again', CANVAS.WIDTH / 2 - 80, CANVAS.HEIGHT / 2 + 50);
+            } else if (gameState.paused) {
+                ctx.font = '24px Arial';
+                ctx.fillText('PAUSED', CANVAS.WIDTH / 2 - 50, CANVAS.HEIGHT / 2);
+                ctx.font = '16px Arial';
+                ctx.fillText('Press P or Esc to Continue', CANVAS.WIDTH / 2 - 90, CANVAS.HEIGHT / 2 + 30);
             }
         }
     

@@ -196,6 +196,3 @@ export const canCollide = (typeA, typeB) => {
     return entityA.collisionMask.collidesWith.includes(entityB.collisionMask.group) ||
            entityB.collisionMask.collidesWith.includes(entityA.collisionMask.group);
 };
-
-// Freeze exports to prevent modification
-Object.freeze(exports);
