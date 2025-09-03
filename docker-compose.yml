@@ -6,19 +6,22 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: development
+      target: dev
     volumes:
       - .:/app
       - /app/node_modules
+      - vite_cache:/app/node_modules/.vite
     ports:
-      - "3000:3000" # Main application
+      - "5173:5173" # Vite development server
       - "9229:9229" # Debug port
     environment:
       - NODE_ENV=development
       - DEBUG=true
-    command: npm run dev
+      - VITE_HOST=0.0.0.0
+      - VITE_PORT=5173
+    command: npm run start
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5173/"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -69,6 +72,7 @@ networks:
 volumes:
   node_modules:
   performance-results:
+  vite_cache:
 
 # Development tools and settings
 x-development:

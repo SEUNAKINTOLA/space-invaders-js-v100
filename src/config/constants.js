@@ -18,7 +18,7 @@ export const CANVAS = Object.freeze({
   HEIGHT: 600,
   BACKGROUND_COLOR: '#000000',
   FPS: 60,
-  PIXEL_RATIO: window.devicePixelRatio || 1
+  PIXEL_RATIO: (typeof window !== 'undefined' && window.devicePixelRatio) || 1
 });
 
 /**
@@ -39,7 +39,7 @@ export const PHYSICS = Object.freeze({
 export const PLAYER = Object.freeze({
   INITIAL_LIVES: 3,
   MOVEMENT_SPEED: 5,
-  SHOOT_COOLDOWN: 250, // ms
+  SHOOT_COOLDOWN: 100, // ms - faster shooting
   SIZE: {
     WIDTH: 32,
     HEIGHT: 32
@@ -79,7 +79,7 @@ export const ENEMY = Object.freeze({
  */
 export const PROJECTILE = Object.freeze({
   PLAYER: {
-    SPEED: 7,
+    SPEED: 50,
     SIZE: { WIDTH: 2, HEIGHT: 10 },
     COLOR: '#ffffff'
   },
@@ -129,10 +129,10 @@ export const PERFORMANCE = Object.freeze({
  * @constant {Object}
  */
 export const DEBUG = Object.freeze({
-  ENABLED: process.env.NODE_ENV === 'development',
+  ENABLED: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
   SHOW_HITBOXES: false,
   SHOW_FPS: true,
-  LOG_LEVEL: process.env.NODE_ENV === 'development' ? 'debug' : 'error'
+  LOG_LEVEL: window.location.hostname === 'localhost' ? 'debug' : 'error'
 });
 
 /**
@@ -161,8 +161,10 @@ function validateConstants() {
   }
 }
 
-// Validate constants on module load
-validateConstants();
+// Validate constants on module load (only in browser environment)
+if (typeof window !== 'undefined') {
+  validateConstants();
+}
 
 /**
  * Export a frozen version of all constants

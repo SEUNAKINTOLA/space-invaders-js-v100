@@ -1,3 +1,43 @@
+# Space Invaders JS
+
+[![CI/CD Pipeline](https://github.com/SEUNAKINTOLA/space-invaders-js-v100/actions/workflows/ci.yml/badge.svg)](https://github.com/SEUNAKINTOLA/space-invaders-js-v100/actions/workflows/ci.yml)
+[![GitHub Pages](https://github.com/SEUNAKINTOLA/space-invaders-js-v100/actions/workflows/pages.yml/badge.svg)](https://github.com/SEUNAKINTOLA/space-invaders-js-v100/actions/workflows/pages.yml)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://seunakintola.github.io/space-invaders-js-v100/)
+
+Modern Space Invaders implementation with advanced rendering, performance optimization, and Docker containerization.
+
+## 🎮 Play Now
+
+- **Live Demo**: [https://seunakintola.github.io/space-invaders-js-v100/](https://seunakintola.github.io/space-invaders-js-v100/)
+- **PR Previews**: Each pull request gets its own preview URL
+- **Local Development**: `npm start` to run locally
+
+## 🚀 Quick Start
+
+### Using Docker (Recommended)
+```bash
+git clone https://github.com/SEUNAKINTOLA/space-invaders-js-v100.git
+cd space-invaders-js-v100
+docker-compose up --build dev
+```
+Open http://localhost:5173
+
+### Traditional Setup
+```bash
+npm install
+npm start
+```
+
+## 📦 Deployment
+
+This project features automatic deployments:
+
+- **Production**: Deploys to GitHub Pages on main branch
+- **PR Previews**: Each PR gets a unique preview URL
+- **Docker**: Containerized for consistent environments
+
+See [Deployment Guide](docs/github-pages-deployment.md) for details.
+
 ## 🔧 Performance Optimization
 
 Key performance metrics and thresholds:

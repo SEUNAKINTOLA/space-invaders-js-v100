@@ -13,7 +13,6 @@
     <meta http-equiv="Content-Security-Policy" 
           content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     
     <title>Space Invaders</title>
@@ -41,6 +40,7 @@
             background: #000;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
+            border: 1px solid #333;
         }
         
         .loading {
@@ -71,74 +71,200 @@
     </div>
 
     <!-- Error handling and initialization -->
-    <script>
-        (function() {
-            'use strict';
-            
-            // Game initialization state
-            const gameState = {
-                initialized: false,
-                error: null,
-                startTime: performance.now()
-            };
+    <script type="module">
+        // Import constants and core modules
+        import { CANVAS } from './src/config/constants.js';
+        import Canvas from './src/core/Canvas.js';
+        import GameLoop from './src/core/GameLoop.js';
+        import Renderer from './src/core/Renderer.js';
+        import PerformanceMonitor from './src/utils/Performance.js';
+        import Game from './src/core/Game.js';
+    
+        // Global game instance
+        let game = null;
+        let gameStarted = false;
 
-            // Canvas setup and validation
-            function initializeCanvas() {
-                const canvas = document.getElementById('game-canvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (!ctx) {
-                    throw new Error('2D context not supported');
-                }
-
-                // Configure canvas for crisp pixel art
-                ctx.imageSmoothingEnabled = false;
-                
-                return { canvas, ctx };
-            }
-
-            // Error handling
-            function handleError(error) {
-                console.error('Game initialization error:', error);
-                const errorElement = document.getElementById('error');
-                errorElement.style.display = 'block';
-                errorElement.textContent = 'Failed to initialize game. Please refresh or check console.';
-                
-                // Hide loading message
-                document.getElementById('loading').style.display = 'none';
-            }
-
-            // Main initialization
+        // Initialize game components with error boundary
+        async function initializeGame() {
             try {
-                const { canvas, ctx } = initializeCanvas();
+                // Show loading state
+                const loadingElement = document.getElementById('loading');
+                loadingElement.style.display = 'block';
+    
+                // Initialize core components with proper config
+                const canvas = new Canvas({
+                    width: CANVAS.WIDTH,
+                    height: CANVAS.HEIGHT,
+                    backgroundColor: CANVAS.BACKGROUND_COLOR
+                });
                 
-                // Basic game loop (placeholder until engine loads)
-                function temporaryLoop() {
-                    if (!gameState.initialized) {
-                        ctx.fillStyle = '#000';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.fillStyle = '#fff';
-                        ctx.font = '20px Arial';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('Initializing game engine...', canvas.width / 2, canvas.height / 2);
-                        requestAnimationFrame(temporaryLoop);
-                    }
+                // Replace the existing canvas element with the new one
+                const gameContainer = document.getElementById('game-container');
+                const existingCanvas = document.getElementById('game-canvas');
+                if (existingCanvas) {
+                    existingCanvas.remove();
                 }
-
-                // Start temporary loop
-                temporaryLoop();
-
-                // Hide loading message once initialization is complete
-                window.addEventListener('load', () => {
-                    const loadTime = performance.now() - gameState.startTime;
-                    console.log(`Page load completed in ${loadTime.toFixed(2)}ms`);
-                    document.getElementById('loading').style.display = 'none';
+                
+                const canvasElement = canvas.getElement();
+                canvasElement.id = 'game-canvas';
+                gameContainer.appendChild(canvasElement);
+                
+                const renderer = new Renderer(canvasElement, {
+                    width: CANVAS.WIDTH,
+                    height: CANVAS.HEIGHT,
+                    useDoubleBuffer: true,
+                    smoothing: false
+                });
+                
+                const performanceMonitor = new PerformanceMonitor();
+                const gameLoop = new GameLoop({
+                    targetFPS: CANVAS.FPS,
+                    debug: true
                 });
 
+                // Create game instance
+                game = new Game();
+
+                // Set pixel ratio for high DPI displays
+                const pixelRatio = CANVAS.PIXEL_RATIO;
+                if (pixelRatio > 1) {
+                    canvas.resize(CANVAS.WIDTH * pixelRatio, CANVAS.HEIGHT * pixelRatio);
+                    canvasElement.style.width = `${CANVAS.WIDTH}px`;
+                    canvasElement.style.height = `${CANVAS.HEIGHT}px`;
+                }
+    
+                // Hide loading state
+                loadingElement.style.display = 'none';
+                gameStarted = true;
+
+                // Start game loop with update and render functions
+                gameLoop.start(
+                    // Update function
+                    (deltaTime) => {
+                        if (game && gameStarted) {
+                            game.update(deltaTime);
+                        }
+                    },
+                    // Render function
+                    () => {
+                        performanceMonitor.startFrame();
+                        renderer.clear();
+                        
+                        if (game && gameStarted) {
+                            // Render all game entities
+                            const entities = game.getAllEntities();
+                            entities.forEach(entity => {
+                                let color = '#ffffff';
+                                
+                                // Set colors based on entity type
+                                switch (entity.type) {
+                                    case 'PLAYER':
+                                        color = '#00ff00';
+                                        break;
+                                    case 'ENEMY_BASIC':
+                                        color = '#ff0000';
+                                        break;
+                                    case 'PLAYER_PROJECTILE':
+                                        color = '#ffffff';
+                                        break;
+                                    case 'ENEMY_PROJECTILE':
+                                        color = '#ffff00';
+                                        break;
+                                }
+                                
+                                renderer.drawEntity({
+                                    x: entity.x,
+                                    y: entity.y,
+                                    width: entity.width,
+                                    height: entity.height,
+                                    color: color
+                                });
+                            });
+
+                            // Render UI
+                            renderUI(renderer, game.getState());
+                        }
+                        
+                        renderer.render();
+                        performanceMonitor.endFrame();
+                    }
+                );
+
+                // Add click handler to start game if in menu
+                canvasElement.addEventListener('click', () => {
+                    if (game && game.getState().current === 'MENU') {
+                        game.startGame();
+                    }
+                });
+    
+                // Global error handler
+                window.onerror = (msg, url, line, col, error) => {
+                    handleError('Runtime Error', error);
+                    gameLoop.stop();
+                };
+    
             } catch (error) {
-                handleError(error);
+                handleError('Initialization Error', error);
             }
-        })();
+        }
+
+        // Render game UI
+        function renderUI(renderer, gameState) {
+            const ctx = renderer.ctx;
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '16px Arial';
+            
+            // Score
+            ctx.fillText(`Score: ${gameState.score}`, 10, 30);
+            
+            // Lives
+            ctx.fillText(`Lives: ${gameState.lives}`, 10, 50);
+            
+            // Level
+            ctx.fillText(`Level: ${gameState.level}`, 10, 70);
+            
+            // Game state messages
+            if (gameState.current === 'MENU') {
+                ctx.font = '24px Arial';
+                ctx.fillText('SPACE INVADERS', CANVAS.WIDTH / 2 - 100, CANVAS.HEIGHT / 2 - 50);
+                ctx.font = '16px Arial';
+                ctx.fillText('Click to Start', CANVAS.WIDTH / 2 - 50, CANVAS.HEIGHT / 2);
+                ctx.fillText('Arrow Keys/WASD: Move', CANVAS.WIDTH / 2 - 80, CANVAS.HEIGHT / 2 + 30);
+                ctx.fillText('Space: Shoot', CANVAS.WIDTH / 2 - 50, CANVAS.HEIGHT / 2 + 50);
+                ctx.fillText('P/Esc: Pause', CANVAS.WIDTH / 2 - 50, CANVAS.HEIGHT / 2 + 70);
+            } else if (gameState.current === 'GAME_OVER') {
+                ctx.font = '24px Arial';
+                ctx.fillText('GAME OVER', CANVAS.WIDTH / 2 - 70, CANVAS.HEIGHT / 2);
+                ctx.font = '16px Arial';
+                ctx.fillText(`Final Score: ${gameState.score}`, CANVAS.WIDTH / 2 - 60, CANVAS.HEIGHT / 2 + 30);
+                ctx.fillText('Refresh to Play Again', CANVAS.WIDTH / 2 - 80, CANVAS.HEIGHT / 2 + 50);
+            } else if (gameState.paused) {
+                ctx.font = '24px Arial';
+                ctx.fillText('PAUSED', CANVAS.WIDTH / 2 - 50, CANVAS.HEIGHT / 2);
+                ctx.font = '16px Arial';
+                ctx.fillText('Press P or Esc to Continue', CANVAS.WIDTH / 2 - 90, CANVAS.HEIGHT / 2 + 30);
+            }
+        }
+    
+        // Centralized error handling
+        function handleError(type, error) {
+            console.error(`${type}:`, error);
+            const errorDiv = document.getElementById('error');
+            if (errorDiv) {
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = `${type}: ${error.message}. Please refresh the page.`;
+            }
+            
+            // Hide loading indicator if visible
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+        }
+    
+        // Initialize game when DOM is ready
+        document.addEventListener('DOMContentLoaded', initializeGame);
     </script>
+    
 </body>
 </html>

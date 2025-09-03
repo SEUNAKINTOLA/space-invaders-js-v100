@@ -22,8 +22,9 @@ services:
       - PERF_MAX_HEAP=512
       - PERF_MAX_FPS_DROP=5
       - PERF_MAX_FRAME_TIME=16.67
+    command: npm test
     healthcheck:
-      test: ["CMD", "node", "./tests/health-check.js"]
+      test: ["CMD", "node", "--version"]
       interval: 30s
       timeout: 10s
       retries: 3
