@@ -18,7 +18,7 @@ export const CANVAS = Object.freeze({
   HEIGHT: 600,
   BACKGROUND_COLOR: '#000000',
   FPS: 60,
-  PIXEL_RATIO: window.devicePixelRatio || 1
+  PIXEL_RATIO: (typeof window !== 'undefined' && window.devicePixelRatio) || 1
 });
 
 /**
@@ -161,8 +161,10 @@ function validateConstants() {
   }
 }
 
-// Validate constants on module load
-validateConstants();
+// Validate constants on module load (only in browser environment)
+if (typeof window !== 'undefined') {
+  validateConstants();
+}
 
 /**
  * Export a frozen version of all constants

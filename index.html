@@ -13,7 +13,6 @@
     <meta http-equiv="Content-Security-Policy" 
           content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     
     <title>Space Invaders</title>
@@ -41,6 +40,7 @@
             background: #000;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
+            border: 1px solid #333;
         }
         
         .loading {
@@ -71,74 +71,112 @@
     </div>
 
     <!-- Error handling and initialization -->
-    <script>
-        (function() {
-            'use strict';
-            
-            // Game initialization state
-            const gameState = {
-                initialized: false,
-                error: null,
-                startTime: performance.now()
-            };
-
-            // Canvas setup and validation
-            function initializeCanvas() {
-                const canvas = document.getElementById('game-canvas');
-                const ctx = canvas.getContext('2d');
-                
-                if (!ctx) {
-                    throw new Error('2D context not supported');
-                }
-
-                // Configure canvas for crisp pixel art
-                ctx.imageSmoothingEnabled = false;
-                
-                return { canvas, ctx };
-            }
-
-            // Error handling
-            function handleError(error) {
-                console.error('Game initialization error:', error);
-                const errorElement = document.getElementById('error');
-                errorElement.style.display = 'block';
-                errorElement.textContent = 'Failed to initialize game. Please refresh or check console.';
-                
-                // Hide loading message
-                document.getElementById('loading').style.display = 'none';
-            }
-
-            // Main initialization
+    <script type="module">
+        // Import constants from the available config file
+        import { CANVAS } from './src/config/constants.js';
+        
+        // Import core modules - these are available based on the project structure
+        import Canvas from './src/core/Canvas.js';
+        import GameLoop from './src/core/GameLoop.js';
+        import Renderer from './src/core/Renderer.js';
+        import PerformanceMonitor from './src/utils/Performance.js';
+    
+        // Initialize game components with error boundary
+        async function initializeGame() {
             try {
-                const { canvas, ctx } = initializeCanvas();
+                // Show loading state
+                const loadingElement = document.getElementById('loading');
+                loadingElement.style.display = 'block';
+    
+                                // Initialize core components with proper config
+                const canvas = new Canvas({
+                    width: CANVAS.WIDTH,
+                    height: CANVAS.HEIGHT,
+                    backgroundColor: CANVAS.BACKGROUND_COLOR
+                });
                 
-                // Basic game loop (placeholder until engine loads)
-                function temporaryLoop() {
-                    if (!gameState.initialized) {
-                        ctx.fillStyle = '#000';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.fillStyle = '#fff';
-                        ctx.font = '20px Arial';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('Initializing game engine...', canvas.width / 2, canvas.height / 2);
-                        requestAnimationFrame(temporaryLoop);
-                    }
+                // Replace the existing canvas element with the new one
+                const gameContainer = document.getElementById('game-container');
+                const existingCanvas = document.getElementById('game-canvas');
+                if (existingCanvas) {
+                    existingCanvas.remove();
                 }
-
-                // Start temporary loop
-                temporaryLoop();
-
-                // Hide loading message once initialization is complete
-                window.addEventListener('load', () => {
-                    const loadTime = performance.now() - gameState.startTime;
-                    console.log(`Page load completed in ${loadTime.toFixed(2)}ms`);
-                    document.getElementById('loading').style.display = 'none';
+                gameContainer.appendChild(canvas.getElement());
+                
+                const renderer = new Renderer(canvas.getElement());
+                const performanceMonitor = new PerformanceMonitor();
+                const gameLoop = new GameLoop({
+                    targetFPS: CANVAS.FPS,
+                    debug: true
                 });
 
+                // Set pixel ratio for high DPI displays
+                const pixelRatio = CANVAS.PIXEL_RATIO;
+                if (pixelRatio > 1) {
+                    canvas.resize(CANVAS.WIDTH * pixelRatio, CANVAS.HEIGHT * pixelRatio);
+                    canvas.getElement().style.width = `${CANVAS.WIDTH}px`;
+                    canvas.getElement().style.height = `${CANVAS.HEIGHT}px`;
+                }
+    
+                // Hide loading state
+                loadingElement.style.display = 'none';
+    
+                // Start game loop with update and render functions
+                gameLoop.start(
+                    // Update function
+                    (deltaTime) => {
+                        // Game state update logic will go here
+                        // For now, just track performance
+                    },
+                    // Render function
+                    () => {
+                        performanceMonitor.startFrame();
+                        renderer.clear();
+                        
+                        // Test rendering - draw a simple rectangle
+                        renderer.drawEntity({
+                            x: 100,
+                            y: 100,
+                            width: 50,
+                            height: 50,
+                            color: '#00ff00'
+                        });
+                        
+                        renderer.render();
+                        performanceMonitor.endFrame();
+                    }
+                );
+    
+                // Global error handler
+                window.onerror = (msg, url, line, col, error) => {
+                    handleError('Runtime Error', error);
+                    gameLoop.stop();
+                };
+    
             } catch (error) {
-                handleError(error);
+                handleError('Initialization Error', error);
             }
-        })();
+        }
+    
+        // Centralized error handling
+        function handleError(type, error) {
+            console.error(`${type}:`, error);
+            const errorDiv = document.getElementById('error');
+            if (errorDiv) {
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = `${type}: ${error.message}. Please refresh the page.`;
+            }
+            
+            // Hide loading indicator if visible
+            const loadingElement = document.getElementById('loading');
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+        }
+    
+        // Initialize game when DOM is ready
+        document.addEventListener('DOMContentLoaded', initializeGame);
     </script>
+    
 </body>
 </html>
